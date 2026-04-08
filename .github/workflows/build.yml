@@ -27,568 +27,427 @@ jobs:
 
       - name: Generate project files
         run: |
-          python3 << 'PYEOF'
-          import os
+          cat > /tmp/gen.py << 'PYEOF'
+import os
 
-          def write(path, content):
-              os.makedirs(os.path.dirname(path), exist_ok=True)
-              with open(path, 'w') as f:
-                  f.write(content)
+def write(path, content):
+    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+    with open(path, 'w') as f:
+        f.write(content)
 
-          # pubspec.yaml
-          write('pubspec.yaml', """name: daycounter
-          description: Day Counter App
-          publish_to: 'none'
-          version: 1.0.0+1
+write('pubspec.yaml', """name: daycounter
+description: Day Counter App
+publish_to: 'none'
+version: 1.0.0+1
 
-          environment:
-            sdk: '>=3.0.0 <4.0.0'
+environment:
+  sdk: '>=3.0.0 <4.0.0'
 
-          dependencies:
-            flutter:
-              sdk: flutter
-            shared_preferences: ^2.2.2
-            home_widget: ^0.4.1
-            intl: ^0.19.0
-            uuid: ^4.3.3
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.2.2
+  home_widget: ^0.4.1
+  intl: ^0.19.0
+  uuid: ^4.3.3
 
-          dev_dependencies:
-            flutter_test:
-              sdk: flutter
-            flutter_lints: ^3.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
 
-          flutter:
-            uses-material-design: true
-          """)
+flutter:
+  uses-material-design: true
+""")
 
-          # main.dart
-          write('lib/main.dart', r"""
-          import 'package:flutter/material.dart';
-          import 'package:shared_preferences/shared_preferences.dart';
-          import 'dart:convert';
-          import 'package:intl/intl.dart';
-          import 'package:uuid/uuid.dart';
-          import 'package:home_widget/home_widget.dart';
+write('lib/main.dart', r"""import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
+import 'package:home_widget/home_widget.dart';
 
-          void main() async {
-            WidgetsFlutterBinding.ensureInitialized();
-            await HomeWidget.setAppGroupId('com.daycounter.app');
-            runApp(const DayCounterApp());
-          }
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await HomeWidget.setAppGroupId('com.daycounter.app');
+  runApp(const DayCounterApp());
+}
 
-          class Counter {
-            final String id;
-            String title;
-            DateTime startDate;
-            bool showOnLockScreen;
+class Counter {
+  final String id;
+  String title;
+  DateTime startDate;
+  bool showOnLockScreen;
 
-            Counter({
-              required this.id,
-              required this.title,
-              required this.startDate,
-              this.showOnLockScreen = false,
-            });
+  Counter({required this.id, required this.title, required this.startDate, this.showOnLockScreen = false});
 
-            int get dayCount {
-              final now = DateTime.now();
-              final today = DateTime(now.year, now.month, now.day);
-              final start = DateTime(startDate.year, startDate.month, startDate.day);
-              return today.difference(start).inDays;
-            }
+  int get dayCount {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    return today.difference(start).inDays;
+  }
 
-            Map<String, dynamic> toJson() => {
-              'id': id,
-              'title': title,
-              'startDate': startDate.toIso8601String(),
-              'showOnLockScreen': showOnLockScreen,
-            };
+  Map<String, dynamic> toJson() => {
+    'id': id, 'title': title,
+    'startDate': startDate.toIso8601String(),
+    'showOnLockScreen': showOnLockScreen,
+  };
 
-            factory Counter.fromJson(Map<String, dynamic> json) => Counter(
-              id: json['id'],
-              title: json['title'],
-              startDate: DateTime.parse(json['startDate']),
-              showOnLockScreen: json['showOnLockScreen'] ?? false,
-            );
-          }
+  factory Counter.fromJson(Map<String, dynamic> json) => Counter(
+    id: json['id'], title: json['title'],
+    startDate: DateTime.parse(json['startDate']),
+    showOnLockScreen: json['showOnLockScreen'] ?? false,
+  );
+}
 
-          class DayCounterApp extends StatelessWidget {
-            const DayCounterApp({super.key});
+class DayCounterApp extends StatelessWidget {
+  const DayCounterApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Day Counter',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5C6BC0)), useMaterial3: true),
+      darkTheme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5C6BC0), brightness: Brightness.dark), useMaterial3: true),
+      home: const CounterListPage(),
+    );
+  }
+}
 
-            @override
-            Widget build(BuildContext context) {
-              return MaterialApp(
-                title: 'Day Counter',
-                debugShowCheckedModeBanner: false,
-                theme: ThemeData(
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: const Color(0xFF5C6BC0),
-                    brightness: Brightness.light,
-                  ),
-                  useMaterial3: true,
-                ),
-                darkTheme: ThemeData(
-                  colorScheme: ColorScheme.fromSeed(
-                    seedColor: const Color(0xFF5C6BC0),
-                    brightness: Brightness.dark,
-                  ),
-                  useMaterial3: true,
-                ),
-                home: const CounterListPage(),
-              );
-            }
-          }
+class CounterListPage extends StatefulWidget {
+  const CounterListPage({super.key});
+  @override
+  State<CounterListPage> createState() => _CounterListPageState();
+}
 
-          class CounterListPage extends StatefulWidget {
-            const CounterListPage({super.key});
+class _CounterListPageState extends State<CounterListPage> {
+  List<Counter> _counters = [];
+  final _uuid = const Uuid();
 
-            @override
-            State<CounterListPage> createState() => _CounterListPageState();
-          }
+  @override
+  void initState() { super.initState(); _loadCounters(); }
 
-          class _CounterListPageState extends State<CounterListPage> {
-            List<Counter> _counters = [];
-            final _uuid = const Uuid();
+  Future<void> _loadCounters() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('counters');
+    if (data != null) {
+      final List decoded = jsonDecode(data);
+      setState(() { _counters = decoded.map((e) => Counter.fromJson(e)).toList(); });
+    }
+  }
 
-            @override
-            void initState() {
-              super.initState();
-              _loadCounters();
-            }
+  Future<void> _saveCounters() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('counters', jsonEncode(_counters.map((c) => c.toJson()).toList()));
+    await _updateWidget();
+  }
 
-            Future<void> _loadCounters() async {
-              final prefs = await SharedPreferences.getInstance();
-              final data = prefs.getString('counters');
-              if (data != null) {
-                final List decoded = jsonDecode(data);
+  Future<void> _updateWidget() async {
+    final lockCounter = _counters.where((c) => c.showOnLockScreen).firstOrNull;
+    if (lockCounter != null) {
+      await HomeWidget.saveWidgetData<String>('widget_title', lockCounter.title);
+      await HomeWidget.saveWidgetData<int>('widget_days', lockCounter.dayCount);
+    } else {
+      await HomeWidget.saveWidgetData<String>('widget_title', '');
+      await HomeWidget.saveWidgetData<int>('widget_days', 0);
+    }
+    await HomeWidget.updateWidget(androidName: 'DayCounterWidget', iOSName: 'DayCounterWidget');
+  }
+
+  void _setLockScreen(Counter selected) {
+    setState(() {
+      for (var c in _counters) { c.showOnLockScreen = c.id == selected.id ? !c.showOnLockScreen : false; }
+    });
+    _saveCounters();
+  }
+
+  void _showAddEditDialog({Counter? existing}) {
+    final titleController = TextEditingController(text: existing?.title ?? '');
+    DateTime selectedDate = existing?.startDate ?? DateTime.now();
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(builder: (context, setDialogState) {
+        return AlertDialog(
+          title: Text(existing == null ? 'New Counter' : 'Edit Counter'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Title', border: OutlineInputBorder()), textCapitalization: TextCapitalization.sentences),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.calendar_today),
+              label: Text(DateFormat('d MMM yyyy').format(selectedDate)),
+              onPressed: () async {
+                final picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime(2000), lastDate: DateTime.now());
+                if (picked != null) setDialogState(() => selectedDate = picked);
+              },
+            ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                final title = titleController.text.trim();
+                if (title.isEmpty) return;
                 setState(() {
-                  _counters = decoded.map((e) => Counter.fromJson(e)).toList();
+                  if (existing == null) {
+                    _counters.add(Counter(id: _uuid.v4(), title: title, startDate: selectedDate));
+                  } else { existing.title = title; existing.startDate = selectedDate; }
                 });
-              }
+                _saveCounters();
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  void _deleteCounter(Counter counter) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Counter'),
+        content: Text('Delete "${counter.title}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () { setState(() => _counters.remove(counter)); _saveCounters(); Navigator.pop(context); },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      backgroundColor: scheme.surface,
+      appBar: AppBar(backgroundColor: scheme.primary, foregroundColor: scheme.onPrimary, title: const Text('Day Counter', style: TextStyle(fontWeight: FontWeight.bold)), elevation: 0),
+      body: _counters.isEmpty
+          ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.calendar_month, size: 64, color: scheme.primary.withOpacity(0.4)),
+              const SizedBox(height: 16),
+              Text('No counters yet', style: TextStyle(fontSize: 18, color: scheme.onSurface.withOpacity(0.5))),
+              const SizedBox(height: 8),
+              Text('Tap + to add your first counter', style: TextStyle(color: scheme.onSurface.withOpacity(0.4))),
+            ]))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _counters.length,
+              itemBuilder: (context, index) {
+                final counter = _counters[index];
+                return _CounterCard(counter: counter, onLockScreenToggle: () => _setLockScreen(counter), onEdit: () => _showAddEditDialog(existing: counter), onDelete: () => _deleteCounter(counter));
+              },
+            ),
+      floatingActionButton: FloatingActionButton.extended(onPressed: () => _showAddEditDialog(), icon: const Icon(Icons.add), label: const Text('Add Counter')),
+    );
+  }
+}
+
+class _CounterCard extends StatelessWidget {
+  final Counter counter;
+  final VoidCallback onLockScreenToggle;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  const _CounterCard({required this.counter, required this.onLockScreenToggle, required this.onEdit, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final days = counter.dayCount;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(child: Text(counter.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+            PopupMenuButton(
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18), SizedBox(width: 8), Text('Edit')])),
+                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))])),
+              ],
+              onSelected: (v) { if (v == 'edit') onEdit(); if (v == 'delete') onDelete(); },
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text('$days', style: TextStyle(fontSize: 48, fontWeight: FontWeight.w800, color: scheme.primary, height: 1)),
+            const SizedBox(width: 8),
+            Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(days == 1 ? 'day' : 'days', style: TextStyle(fontSize: 18, color: scheme.onSurface.withOpacity(0.6)))),
+          ]),
+          const SizedBox(height: 4),
+          Text('Since ${DateFormat('d MMM yyyy').format(counter.startDate)}', style: TextStyle(fontSize: 13, color: scheme.onSurface.withOpacity(0.5))),
+          const Divider(height: 24),
+          Row(children: [
+            Icon(Icons.lock_outline, size: 18, color: counter.showOnLockScreen ? scheme.primary : scheme.onSurface.withOpacity(0.4)),
+            const SizedBox(width: 8),
+            Text('Show on lock screen', style: TextStyle(color: counter.showOnLockScreen ? scheme.primary : scheme.onSurface.withOpacity(0.6), fontWeight: counter.showOnLockScreen ? FontWeight.w600 : FontWeight.normal)),
+            const Spacer(),
+            Switch(value: counter.showOnLockScreen, onChanged: (_) => onLockScreenToggle()),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+""")
+
+write('android/app/src/main/AndroidManifest.xml', """<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+  <application android:label="Day Counter" android:name="\${applicationName}" android:icon="@mipmap/ic_launcher">
+    <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop"
+        android:theme="@style/LaunchTheme"
+        android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+        android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
+      <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/>
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+    <receiver android:name=".DayCounterWidget" android:exported="true">
+      <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/day_counter_widget_info"/>
+    </receiver>
+    <meta-data android:name="flutterEmbedding" android:value="2"/>
+  </application>
+</manifest>
+""")
+
+write('android/app/src/main/res/xml/day_counter_widget_info.xml', """<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp" android:minHeight="80dp"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/day_counter_widget"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen|keyguard"
+    android:previewImage="@mipmap/ic_launcher">
+</appwidget-provider>
+""")
+
+write('android/app/src/main/res/layout/day_counter_widget.xml', """<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:gravity="center"
+    android:background="#CC1A1A2E" android:padding="12dp">
+  <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+      android:text="Day Counter" android:textColor="#FFFFFF" android:textSize="13sp"
+      android:gravity="center" android:alpha="0.8" android:maxLines="1" android:ellipsize="end"/>
+  <TextView android:id="@+id/widget_days" android:layout_width="match_parent" android:layout_height="wrap_content"
+      android:text="0" android:textColor="#FFFFFF" android:textSize="40sp" android:textStyle="bold" android:gravity="center"/>
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+      android:text="days" android:textColor="#FFFFFF" android:textSize="12sp" android:gravity="center" android:alpha="0.7"/>
+</LinearLayout>
+""")
+
+write('android/app/src/main/kotlin/com/daycounter/app/MainActivity.kt', """package com.daycounter.app
+import io.flutter.embedding.android.FlutterActivity
+class MainActivity: FlutterActivity()
+""")
+
+write('android/app/src/main/kotlin/com/daycounter/app/DayCounterWidget.kt', """package com.daycounter.app
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
+import android.content.Context
+import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetPlugin
+
+class DayCounterWidget : AppWidgetProvider() {
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        for (appWidgetId in appWidgetIds) {
+            val widgetData = HomeWidgetPlugin.getData(context)
+            val title = widgetData.getString("widget_title", "Day Counter") ?: "Day Counter"
+            val days = widgetData.getInt("widget_days", 0)
+            val views = RemoteViews(context.packageName, R.layout.day_counter_widget).apply {
+                setTextViewText(R.id.widget_title, title)
+                setTextViewText(R.id.widget_days, days.toString())
             }
+            appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+    }
+}
+""")
 
-            Future<void> _saveCounters() async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setString(
-                'counters',
-                jsonEncode(_counters.map((c) => c.toJson()).toList()),
-              );
-              await _updateWidget();
-            }
+write('android/app/build.gradle', """plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+android {
+    namespace "com.daycounter.app"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions { jvmTarget = '1.8' }
+    defaultConfig {
+        applicationId "com.daycounter.app"
+        minSdk 21
+        targetSdk flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+    }
+    buildTypes {
+        release { signingConfig signingConfigs.debug; minifyEnabled false }
+    }
+}
+flutter { source '../..' }
+""")
 
-            Future<void> _updateWidget() async {
-              final lockCounter = _counters.where((c) => c.showOnLockScreen).firstOrNull;
-              if (lockCounter != null) {
-                await HomeWidget.saveWidgetData<String>('widget_title', lockCounter.title);
-                await HomeWidget.saveWidgetData<int>('widget_days', lockCounter.dayCount);
-              } else {
-                await HomeWidget.saveWidgetData<String>('widget_title', '');
-                await HomeWidget.saveWidgetData<int>('widget_days', 0);
-              }
-              await HomeWidget.updateWidget(
-                androidName: 'DayCounterWidget',
-                iOSName: 'DayCounterWidget',
-              );
-            }
+write('android/build.gradle', """buildscript {
+    ext.kotlin_version = '1.9.0'
+    repositories { google(); mavenCentral() }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+allprojects { repositories { google(); mavenCentral() } }
+rootProject.buildDir = '../build'
+subprojects { project.buildDir = "${rootProject.buildDir}/${project.name}" }
+subprojects { project.evaluationDependsOn(':app') }
+tasks.register("clean", Delete) { delete rootProject.buildDir }
+""")
 
-            void _setLockScreen(Counter selected) {
-              setState(() {
-                for (var c in _counters) {
-                  c.showOnLockScreen = c.id == selected.id ? !c.showOnLockScreen : false;
-                }
-              });
-              _saveCounters();
-            }
+write('android/settings.gradle', """pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkPath = properties.getProperty("flutter.sdk")
+        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        return flutterSdkPath
+    }()
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+}
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version "8.1.0" apply false
+    id "org.jetbrains.kotlin.android" version "1.9.0" apply false
+}
+include ":app"
+""")
 
-            void _showAddEditDialog({Counter? existing}) {
-              final titleController = TextEditingController(text: existing?.title ?? '');
-              DateTime selectedDate = existing?.startDate ?? DateTime.now();
+write('android/local.properties', """sdk.dir=/usr/local/lib/android/sdk
+flutter.sdk=/opt/hostedtoolcache/flutter/3.19.0-stable/x64
+flutter.versionCode=1
+flutter.versionName=1.0.0
+""")
 
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return StatefulBuilder(builder: (context, setDialogState) {
-                    return AlertDialog(
-                      title: Text(existing == null ? 'New Counter' : 'Edit Counter'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(
-                            controller: titleController,
-                            decoration: const InputDecoration(
-                              labelText: 'Title',
-                              border: OutlineInputBorder(),
-                            ),
-                            textCapitalization: TextCapitalization.sentences,
-                          ),
-                          const SizedBox(height: 16),
-                          OutlinedButton.icon(
-                            icon: const Icon(Icons.calendar_today),
-                            label: Text(DateFormat('d MMM yyyy').format(selectedDate)),
-                            onPressed: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: selectedDate,
-                                firstDate: DateTime(2000),
-                                lastDate: DateTime.now(),
-                              );
-                              if (picked != null) {
-                                setDialogState(() => selectedDate = picked);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton(
-                          onPressed: () {
-                            final title = titleController.text.trim();
-                            if (title.isEmpty) return;
-                            setState(() {
-                              if (existing == null) {
-                                _counters.add(Counter(
-                                  id: _uuid.v4(),
-                                  title: title,
-                                  startDate: selectedDate,
-                                ));
-                              } else {
-                                existing.title = title;
-                                existing.startDate = selectedDate;
-                              }
-                            });
-                            _saveCounters();
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Save'),
-                        ),
-                      ],
-                    );
-                  });
-                },
-              );
-            }
-
-            void _deleteCounter(Counter counter) {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Delete Counter'),
-                  content: Text('Delete "${counter.title}"?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                      onPressed: () {
-                        setState(() => _counters.remove(counter));
-                        _saveCounters();
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Delete'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            @override
-            Widget build(BuildContext context) {
-              final scheme = Theme.of(context).colorScheme;
-              return Scaffold(
-                backgroundColor: scheme.surface,
-                appBar: AppBar(
-                  backgroundColor: scheme.primary,
-                  foregroundColor: scheme.onPrimary,
-                  title: const Text('Day Counter', style: TextStyle(fontWeight: FontWeight.bold)),
-                  elevation: 0,
-                ),
-                body: _counters.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.calendar_month, size: 64, color: scheme.primary.withOpacity(0.4)),
-                            const SizedBox(height: 16),
-                            Text('No counters yet', style: TextStyle(fontSize: 18, color: scheme.onSurface.withOpacity(0.5))),
-                            const SizedBox(height: 8),
-                            Text('Tap + to add your first counter', style: TextStyle(color: scheme.onSurface.withOpacity(0.4))),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _counters.length,
-                        itemBuilder: (context, index) {
-                          final counter = _counters[index];
-                          return _CounterCard(
-                            counter: counter,
-                            onLockScreenToggle: () => _setLockScreen(counter),
-                            onEdit: () => _showAddEditDialog(existing: counter),
-                            onDelete: () => _deleteCounter(counter),
-                          );
-                        },
-                      ),
-                floatingActionButton: FloatingActionButton.extended(
-                  onPressed: () => _showAddEditDialog(),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Counter'),
-                ),
-              );
-            }
-          }
-
-          class _CounterCard extends StatelessWidget {
-            final Counter counter;
-            final VoidCallback onLockScreenToggle;
-            final VoidCallback onEdit;
-            final VoidCallback onDelete;
-
-            const _CounterCard({
-              required this.counter,
-              required this.onLockScreenToggle,
-              required this.onEdit,
-              required this.onDelete,
-            });
-
-            @override
-            Widget build(BuildContext context) {
-              final scheme = Theme.of(context).colorScheme;
-              final days = counter.dayCount;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(counter.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          ),
-                          PopupMenuButton(
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 18), SizedBox(width: 8), Text('Edit')])),
-                              const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, size: 18, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))])),
-                            ],
-                            onSelected: (v) {
-                              if (v == 'edit') onEdit();
-                              if (v == 'delete') onDelete();
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('$days', style: TextStyle(fontSize: 48, fontWeight: FontWeight.w800, color: scheme.primary, height: 1)),
-                          const SizedBox(width: 8),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Text(days == 1 ? 'day' : 'days', style: TextStyle(fontSize: 18, color: scheme.onSurface.withOpacity(0.6))),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text('Since ${DateFormat('d MMM yyyy').format(counter.startDate)}', style: TextStyle(fontSize: 13, color: scheme.onSurface.withOpacity(0.5))),
-                      const Divider(height: 24),
-                      Row(
-                        children: [
-                          Icon(Icons.lock_outline, size: 18, color: counter.showOnLockScreen ? scheme.primary : scheme.onSurface.withOpacity(0.4)),
-                          const SizedBox(width: 8),
-                          Text('Show on lock screen', style: TextStyle(color: counter.showOnLockScreen ? scheme.primary : scheme.onSurface.withOpacity(0.6), fontWeight: counter.showOnLockScreen ? FontWeight.w600 : FontWeight.normal)),
-                          const Spacer(),
-                          Switch(value: counter.showOnLockScreen, onChanged: (_) => onLockScreenToggle()),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-          }
-          """)
-
-          # AndroidManifest.xml
-          write('android/app/src/main/AndroidManifest.xml', """<?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-            <application
-                android:label="Day Counter"
-                android:name="${applicationName}"
-                android:icon="@mipmap/ic_launcher">
-              <activity
-                  android:name=".MainActivity"
-                  android:exported="true"
-                  android:launchMode="singleTop"
-                  android:theme="@style/LaunchTheme"
-                  android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                  android:hardwareAccelerated="true"
-                  android:windowSoftInputMode="adjustResize">
-                <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/>
-                <intent-filter>
-                  <action android:name="android.intent.action.MAIN"/>
-                  <category android:name="android.intent.category.LAUNCHER"/>
-                </intent-filter>
-              </activity>
-              <receiver android:name=".DayCounterWidget" android:exported="true">
-                <intent-filter>
-                  <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
-                </intent-filter>
-                <meta-data android:name="android.appwidget.provider" android:resource="@xml/day_counter_widget_info"/>
-              </receiver>
-              <meta-data android:name="flutterEmbedding" android:value="2"/>
-            </application>
-          </manifest>
-          """)
-
-          # Widget info XML
-          write('android/app/src/main/res/xml/day_counter_widget_info.xml', """<?xml version="1.0" encoding="utf-8"?>
-          <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-              android:minWidth="180dp"
-              android:minHeight="80dp"
-              android:updatePeriodMillis="1800000"
-              android:initialLayout="@layout/day_counter_widget"
-              android:resizeMode="horizontal|vertical"
-              android:widgetCategory="home_screen|keyguard"
-              android:previewImage="@mipmap/ic_launcher">
-          </appwidget-provider>
-          """)
-
-          # Widget layout
-          write('android/app/src/main/res/layout/day_counter_widget.xml', """<?xml version="1.0" encoding="utf-8"?>
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical"
-              android:gravity="center"
-              android:background="#CC1A1A2E"
-              android:padding="12dp">
-            <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="Day Counter" android:textColor="#FFFFFF" android:textSize="13sp" android:gravity="center"
-                android:alpha="0.8" android:maxLines="1" android:ellipsize="end"/>
-            <TextView android:id="@+id/widget_days" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="0" android:textColor="#FFFFFF" android:textSize="40sp" android:textStyle="bold" android:gravity="center"/>
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:text="days" android:textColor="#FFFFFF" android:textSize="12sp" android:gravity="center" android:alpha="0.7"/>
-          </LinearLayout>
-          """)
-
-          # MainActivity.kt
-          write('android/app/src/main/kotlin/com/daycounter/app/MainActivity.kt', """package com.daycounter.app
-          import io.flutter.embedding.android.FlutterActivity
-          class MainActivity: FlutterActivity()
-          """)
-
-          # DayCounterWidget.kt
-          write('android/app/src/main/kotlin/com/daycounter/app/DayCounterWidget.kt', """package com.daycounter.app
-          import android.appwidget.AppWidgetManager
-          import android.appwidget.AppWidgetProvider
-          import android.content.Context
-          import android.widget.RemoteViews
-          import es.antonborri.home_widget.HomeWidgetPlugin
-
-          class DayCounterWidget : AppWidgetProvider() {
-              override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-                  for (appWidgetId in appWidgetIds) {
-                      val widgetData = HomeWidgetPlugin.getData(context)
-                      val title = widgetData.getString("widget_title", "Day Counter") ?: "Day Counter"
-                      val days = widgetData.getInt("widget_days", 0)
-                      val views = RemoteViews(context.packageName, R.layout.day_counter_widget).apply {
-                          setTextViewText(R.id.widget_title, title)
-                          setTextViewText(R.id.widget_days, days.toString())
-                      }
-                      appWidgetManager.updateAppWidget(appWidgetId, views)
-                  }
-              }
-          }
-          """)
-
-          # app/build.gradle
-          write('android/app/build.gradle', """plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-          android {
-              namespace "com.daycounter.app"
-              compileSdk flutter.compileSdkVersion
-              ndkVersion flutter.ndkVersion
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-              kotlinOptions { jvmTarget = '1.8' }
-              defaultConfig {
-                  applicationId "com.daycounter.app"
-                  minSdk 21
-                  targetSdk flutter.targetSdkVersion
-                  versionCode flutter.versionCode
-                  versionName flutter.versionName
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                      minifyEnabled false
-                  }
-              }
-          }
-          flutter { source '../..' }
-          """)
-
-          # build.gradle (root)
-          write('android/build.gradle', """buildscript {
-              ext.kotlin_version = '1.9.0'
-              repositories { google(); mavenCentral() }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.1.0'
-                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-              }
-          }
-          allprojects { repositories { google(); mavenCentral() } }
-          rootProject.buildDir = '../build'
-          subprojects { project.buildDir = "${rootProject.buildDir}/${project.name}" }
-          subprojects { project.evaluationDependsOn(':app') }
-          tasks.register("clean", Delete) { delete rootProject.buildDir }
-          """)
-
-          # settings.gradle
-          write('android/settings.gradle', """pluginManagement {
-              def flutterSdkPath = {
-                  def properties = new Properties()
-                  file("local.properties").withInputStream { properties.load(it) }
-                  def flutterSdkPath = properties.getProperty("flutter.sdk")
-                  assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
-                  return flutterSdkPath
-              }()
-              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
-          }
-          plugins {
-              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-              id "com.android.application" version "8.1.0" apply false
-              id "org.jetbrains.kotlin.android" version "1.9.0" apply false
-          }
-          include ":app"
-          """)
-
-          # local.properties
-          write('android/local.properties', """sdk.dir=/usr/local/lib/android/sdk
-          flutter.sdk=/opt/hostedtoolcache/flutter/3.19.0-stable/x64
-          flutter.versionCode=1
-          flutter.versionName=1.0.0
-          """)
-
-          print("All files generated successfully!")
-          PYEOF
+print("All files generated successfully!")
+PYEOF
+          python3 /tmp/gen.py
 
       - name: Install dependencies
         run: flutter pub get
